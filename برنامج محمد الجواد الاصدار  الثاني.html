@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تفعيل اشتراك المشترك</title>
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(to right, #4e54c8, #8f94fb);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      direction: rtl;
+      margin: 0;
+      padding: 0;
+    }
+    .form-container {
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      color: #333;
+    }
+    h2 {
+      color: #4e54c8;
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #4e54c8;
+      font-size: 1.1em;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1em;
+      background-color: #f9f9ff;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background-color: #4e54c8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1em;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #373b8e;
+    }
+    .reset-btn {
+      background-color: #dc3545;
+    }
+    .reset-btn:hover {
+      background-color: #a71d2b;
+    }
+    .print-btn {
+      background-color: #007bff;
+    }
+    .print-btn:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <h2>تفعيل اشتراك المشترك</h2>
+    <div class="form-group">
+      <label for="subscriberName">اسم المشترك</label>
+      <input type="text" id="subscriberName" placeholder="أدخل اسم المشترك">
+    </div>
+    <div class="form-group">
+      <label for="amountPaid">المبلغ المدفوع</label>
+      <input type="number" id="amountPaid" placeholder="أدخل المبلغ المدفوع">
+    </div>
+    <button class="btn" id="activateButton">تفعيل</button>
+    <button class="btn reset-btn" id="resetTotalButton">تصفير الحساب</button>
+    <button class="btn" id="resetCounterButton">تصفير العداد</button>
+    <button class="btn" id="addBalanceButton">إضافة رصيد</button>
+    <button class="btn" id="resetBalanceButton">تصفير الرصيد المتبقي</button>
+    <button class="btn print-btn" id="printButton">طباعة الوصل</button>
+    <button class="btn" id="sendReportButton">إرسال تقرير العمليات</button>
+    <button class="btn" id="findDuplicatesButton">البحث عن المشتركين المتكررين</button>
+
+    <div class="result" id="totalResult"><strong>المبلغ الكلي: 0</strong></div>
+    <div class="result" id="remainingBalance"><strong>الرصيد المتبقي: 0</strong></div>
+    <div class="counter-result" id="counterResult"><strong>عدد المشتركين: 0</strong></div>
+  </div>
+
+  <script>
+    let totalAmount = parseFloat(localStorage.getItem('totalAmount')) || 0;
+    let remainingBalance = parseFloat(localStorage.getItem('remainingBalance')) || 0;
+    let subscriberCount = parseInt(localStorage.getItem('subscriberCount')) || 0;
+    let operations = JSON.parse(localStorage.getItem('operations')) || [];
+
+    const totalDiv = document.getElementById('totalResult');
+    const remainingBalanceDiv = document.getElementById('remainingBalance');
+    const counterDiv = document.getElementById('counterResult');
+    const recipientNumber = '9647723761750';
+    const resetCode = '11111';
+
+    totalDiv.innerHTML = `<strong>المبلغ الكلي: ${totalAmount}</strong>`;
+    remainingBalanceDiv.innerHTML = `<strong>الرصيد المتبقي: ${remainingBalance}</strong>`;
+    counterDiv.innerHTML = `<strong>عدد المشتركين: ${subscriberCount}</strong>`;
+
+    document.getElementById('activateButton').addEventListener('click', activateSubscriber);
+    document.getElementById('resetTotalButton').addEventListener('click', resetTotal);
+    document.getElementById('resetCounterButton').addEventListener('click', resetCounter);
+    document.getElementById('addBalanceButton').addEventListener('click', addBalance);
+    document.getElementById('resetBalanceButton').addEventListener('click', resetBalance);
+    document.getElementById('printButton').addEventListener('click', printReceipt);
+    document.getElementById('sendReportButton').addEventListener('click', sendReport);
+    document.getElementById('findDuplicatesButton').addEventListener('click', findDuplicates);
+
+    function activateSubscriber() {
+      const name = document.getElementById('subscriberName').value;
+      const amount = parseFloat(document.getElementById('amountPaid').value);
+
+      if (!name || isNaN(amount) || amount <= 0) {
+        alert("الرجاء إدخال اسم المشترك والمبلغ المدفوع الصحيح.");
+        return;
+      }
+
+      if (amount > remainingBalance) {
+        alert("الرصيد المتبقي غير كافٍ لتفعيل الاشتراك.");
+        return;
+      }
+
+      remainingBalance -= amount;
+      totalAmount += amount;
+      subscriberCount++;
+      operations.push({ name, amount, date: new Date().toLocaleString() });
+
+      localStorage.setItem('remainingBalance', remainingBalance);
+      localStorage.setItem('totalAmount', totalAmount);
+      localStorage.setItem('subscriberCount', subscriberCount);
+      localStorage.setItem('operations', JSON.stringify(operations));
+
+      remainingBalanceDiv.innerHTML = `<strong>الرصيد المتبقي: ${remainingBalance}</strong>`;
+      totalDiv.innerHTML = `<strong>المبلغ الكلي: ${totalAmount}</strong>`;
+      counterDiv.innerHTML = `<strong>عدد المشتركين: ${subscriberCount}</strong>`;
+
+      const whatsappMessage = `تم تفعيل الاشتراك:\n\nالاسم: ${name}\nالمبلغ المدفوع: ${amount}\nالرصيد المتبقي: ${remainingBalance}\nالمبلغ الكلي: ${totalAmount}\nتاريخ التفعيل: ${new Date().toLocaleString()}`;
+      const whatsappURL = `https://api.whatsapp.com/send?phone=${recipientNumber}&text=${encodeURIComponent(whatsappMessage)}`;
+
+      window.open(whatsappURL, '_blank');
+      document.getElementById('subscriberName').value = '';
+      document.getElementById('amountPaid').value = '';
+    }
+
+    function resetTotal() {
+      const userInput = prompt("أدخل رمز تصفير الحساب:");
+      if (userInput === resetCode) {
+        remainingBalance += totalAmount;
+        totalAmount = 0;
+        localStorage.setItem('totalAmount', totalAmount);
+        localStorage.setItem('remainingBalance', remainingBalance);
+
+        totalDiv.innerHTML = `<strong>المبلغ الكلي: ${totalAmount}</strong>`;
+        remainingBalanceDiv.innerHTML = `<strong>الرصيد المتبقي: ${remainingBalance}</strong>`;
+
+        const message = `تم تصفير الحساب بنجاح. الرصيد المتبقي الآن: ${remainingBalance} والمبلغ الكلي الآن: ${totalAmount}`;
+        const whatsappURL = `https://api.whatsapp.com/send?phone=${recipientNumber}&text=${encodeURIComponent(message)}`;
+        window.open(whatsappURL, '_blank');
+
+        alert("تم تصفير الحساب.");
+      } else {
+        alert("الرمز المدخل غير صحيح.");
+      }
+    }
+
+    function resetCounter() {
+      const userInput = prompt("أدخل رمز تصفير العداد:");
+      if (userInput === resetCode) {
+        subscriberCount = 0;
+        localStorage.setItem('subscriberCount', subscriberCount);
+        counterDiv.innerHTML = `<strong>عدد المشتركين: ${subscriberCount}</strong>`;
+
+        const message = `تم تصفير عداد المشتركين. العدد الحالي للمشتركين: ${subscriberCount}`;
+        const whatsappURL = `https://api.whatsapp.com/send?phone=${recipientNumber}&text=${encodeURIComponent(message)}`;
+        window.open(whatsappURL, '_blank');
+
+        alert("تم تصفير عدد المشتركين.");
+      } else {
+        alert("الرمز المدخل غير صحيح.");
+      }
+    }
+
+    function addBalance() {
+      const userInput = prompt("أدخل رمز إضافة الرصيد:");
+      if (userInput === resetCode) {
+        const amountToAdd = parseFloat(prompt("أدخل المبلغ المراد إضافته إلى الرصيد المتبقي:"));
+        if (!isNaN(amountToAdd) && amountToAdd > 0) {
+          remainingBalance += amountToAdd;
+          localStorage.setItem('remainingBalance', remainingBalance);
+          remainingBalanceDiv.innerHTML = `<strong>الرصيد المتبقي: ${remainingBalance}</strong>`;
+          alert("تمت إضافة الرصيد بنجاح.");
+        } else {
+          alert("الرجاء إدخال مبلغ صالح.");
+        }
+      } else {
+        alert("الرمز المدخل غير صحيح.");
+      }
+    }
+
+    function resetBalance() {
+      const userInput = prompt("أدخل رمز تصفير الرصيد:");
+      if (userInput === resetCode) {
+        remainingBalance = 0;
+        localStorage.setItem('remainingBalance', remainingBalance);
+        remainingBalanceDiv.innerHTML = `<strong>الرصيد المتبقي: ${remainingBalance}</strong>`;
+        alert("تم تصفير الرصيد المتبقي بنجاح.");
+      } else {
+        alert("الرمز المدخل غير صحيح.");
+      }
+    }
+
+    function printReceipt() {
+      alert("ميزة طباعة الوصل غير مفعلة حالياً. يمكنك تنفيذ عملية الطباعة هنا إذا كنت تريد.");
+      // يمكنك إضافة منطق الطباعة الفعلي هنا
+    }
+
+    function sendReport() {
+      if (operations.length === 0) {
+        alert("لا توجد عمليات لإرسال تقرير عنها.");
+        return;
+      }
+
+      let report = "تقرير العمليات:\n\n";
+      operations.forEach((op, index) => {
+        report += `عملية ${index + 1}:\nاسم المشترك: ${op.name}\nالمبلغ المدفوع: ${op.amount}\nالتاريخ: ${op.date}\n\n`;
+      });
+
+      const whatsappURL = `https://api.whatsapp.com/send?phone=${recipientNumber}&text=${encodeURIComponent(report)}`;
+      window.open(whatsappURL, '_blank');
+    }
+
+    function findDuplicates() {
+      const duplicates = {};
+      operations.forEach(op => {
+        if (duplicates[op.name]) {
+          duplicates[op.name].count++;
+          duplicates[op.name].entries.push(op);
+        } else {
+          duplicates[op.name] = { count: 1, entries: [op] };
+        }
+      });
+
+      const duplicateNames = Object.keys(duplicates).filter(name => duplicates[name].count > 1);
+
+      if (duplicateNames.length === 0) {
+        const whatsappURL = `https://api.whatsapp.com/send?phone=${recipientNumber}&text=${encodeURIComponent("لا يوجد مشتركين متكررين.")}`;
+        window.open(whatsappURL, '_blank');
+        return;
+      }
+
+      let report = "المشتركين المتكررين:\n\n";
+      duplicateNames.forEach(name => {
+        report += `اسم المشترك: ${name}\n`;
+        duplicates[name].entries.forEach((entry, index) => {
+          report += `تكرار ${index + 1}: المبلغ المدفوع: ${entry.amount}, التاريخ: ${entry.date}\n`;
+        });
+        report += `عدد مرات التكرار: ${duplicates[name].count}\n\n`;
+      });
+
+      const whatsappURL = `https://api.whatsapp.com/send?phone=${recipientNumber}&text=${encodeURIComponent(report)}`;
+      window.open(whatsappURL, '_blank');
+    }
+  </script>
+</body>
+</html>
